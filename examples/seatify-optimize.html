@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seatify – Optimize Seating Animation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-2: #222;
+    --border: #333;
+    --border-gold: #d4a853;
+    --gold: #d4a853;
+    --gold-dim: rgba(212, 168, 83, 0.3);
+    --text: #e8e4dc;
+    --text-dim: #888;
+    --green: #4caf50;
+    --green-dim: rgba(76, 175, 80, 0.25);
+    --orange: #e8943a;
+    --red: #e05555;
+    --cyan: #56c8c8;
+    --pink: #c87896;
+    --purple: #8a7bc8;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Stage ── */
+  .stage {
+    width: 960px;
+    height: 620px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Total animation: 16s loop
+     0s-1s:     Initial state visible
+     1s-2.5s:   Cursor moves to optimize button
+     2.5s-3s:   Click flash
+     3s-3.5s:   Pulse/processing effect
+     3.5s-6.5s: Guests animate to new positions
+     6.5s-8s:   Tables glow, counters update
+     8s-12s:    Hold final optimized state
+     12s-13s:   "Optimized" badge appears
+     13s-15s:   Hold
+     15s-16s:   Fade and reset
+  */
+
+  /* ── Nav Bar ── */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .nav-back { font-size: 13px; color: var(--text-dim); }
+  .nav-tabs { display: flex; gap: 24px; font-size: 11px; letter-spacing: 1.5px; font-weight: 500; text-transform: uppercase; }
+  .nav-tab { color: var(--text-dim); }
+  .nav-tab.active { color: var(--text); border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+  .nav-right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-dim); }
+  .nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--bg); }
+
+  /* ── Toolbar ── */
+  .toolbar {
+    display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .tool-btn {
+    padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600;
+    letter-spacing: 0.5px; text-transform: uppercase; border: 1px solid var(--border); color: var(--text);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tool-btn.gold { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+  .tool-btn.green { border-color: var(--green); color: var(--green); }
+  .tool-spacer { flex: 1; }
+
+  /* ── Main Content Area ── */
+  .content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* ── Canvas Area ── */
+  .canvas-area {
+    flex: 1;
+    position: relative;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px);
+    overflow: hidden;
+  }
+
+  /* ── Tables ── */
+  .table-circle {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: border-color 0.6s, box-shadow 0.6s;
+  }
+  .table-rect {
+    position: absolute;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--surface);
+    transition: border-color 0.6s, box-shadow 0.6s;
+  }
+  .table-name { font-size: 14px; font-weight: 500; }
+  .table-cap { font-size: 11px; margin-top: 2px; transition: color 0.3s; }
+  .table-cap.before { color: var(--orange); }
+
+  /* Table positions */
+  .t1 { width: 160px; height: 160px; left: 60px; top: 80px; }
+  .t2 { width: 190px; height: 80px; left: 300px; top: 40px; }
+  .t3 { width: 150px; height: 150px; left: 310px; top: 250px; }
+
+  /* After optimization: tables glow */
+  .stage.optimized .table-circle,
+  .stage.optimized .table-rect {
+    border-color: var(--cyan);
+    box-shadow: 0 0 20px rgba(86, 200, 200, 0.15);
+  }
+  .stage.optimized .table-cap { color: var(--green); }
+
+  /* ── Guest Seats ── */
+  .seat {
+    position: absolute;
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700;
+    color: var(--bg);
+    z-index: 5;
+    /* All seats will animate position via CSS transitions triggered by class change */
+    transition: left 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                top 1.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+                transform 0.3s;
+  }
+  /* Color by group */
+  .seat.family   { background: var(--cyan); border: 2px solid var(--cyan); }
+  .seat.friends  { background: var(--pink); border: 2px solid var(--pink); }
+  .seat.work     { background: var(--gold); border: 2px solid var(--gold); }
+  .seat.uncat    { background: var(--purple); border: 2px solid var(--purple); }
+
+  /* ── Seat positions: BEFORE optimization ──
+     Guests are mixed across tables (suboptimal)
+     Positions calculated trigonometrically so seat centers sit on table perimeters.
+     Seat = 30x30, so offset = -15 from center coords. */
+
+  /* Table 1 (round, 160px, center 140,160, R=95) – 8 guests at 45° intervals from -90° */
+  #s-jw  { left: 125px; top: 50px; }   /* family – angle -90° */
+  #s-bt  { left: 192px; top: 78px; }   /* work   – angle -45° */
+  #s-hr  { left: 220px; top: 145px; }  /* friends – angle 0°  */
+  #s-nm  { left: 192px; top: 212px; }  /* work   – angle 45°  */
+  #s-lc  { left: 125px; top: 240px; }  /* friends – angle 90° */
+  #s-ib  { left: 58px;  top: 212px; }  /* work   – angle 135° */
+  #s-cw  { left: 30px;  top: 145px; }  /* family – angle 180° */
+  #s-lg  { left: 58px;  top: 78px; }   /* work   – angle 225° */
+
+  /* Table 2 (rect, 190×80, origin 300,40) – 6 guests: 3 top edge, 3 bottom edge */
+  #s-dt  { left: 333px; top: 25px; }   /* friends – top-left  */
+  #s-ed  { left: 380px; top: 25px; }   /* family  – top-center */
+  #s-ml  { left: 428px; top: 25px; }   /* friends – top-right */
+  #s-ew  { left: 333px; top: 105px; }  /* family  – bottom-left */
+  #s-sg  { left: 380px; top: 105px; }  /* work    – bottom-center */
+  #s-aj  { left: 428px; top: 105px; }  /* friends – bottom-right */
+
+  /* Table 3 (round, 150px, center 385,325, R=90) – 4 guests at 90° intervals from -90° */
+  #s-sm  { left: 370px; top: 220px; }  /* work    – angle -90° */
+  #s-mt  { left: 460px; top: 310px; }  /* friends – angle 0°   */
+  #s-oc  { left: 370px; top: 400px; }  /* work    – angle 90°  */
+  #s-rm  { left: 280px; top: 310px; }  /* friends – angle 180° */
+
+  /* ── Seat positions: AFTER optimization ──
+     Work → T1 (7 guests), Family → T2 (4 guests), Friends → T3 (7 guests)
+     Circular seats placed at R from center; rect seats on edges. */
+
+  /* Work → T1 (round, center 140,160, R=95) – 7 guests at 51.43° intervals */
+  .stage.optimized #s-bt  { left: 125px; top: 50px; }   /* angle -90°    */
+  .stage.optimized #s-nm  { left: 199px; top: 86px; }   /* angle -38.57° */
+  .stage.optimized #s-ib  { left: 218px; top: 166px; }  /* angle 12.86°  */
+  .stage.optimized #s-lg  { left: 166px; top: 231px; }  /* angle 64.29°  */
+  .stage.optimized #s-sg  { left: 84px;  top: 231px; }  /* angle 115.71° */
+  .stage.optimized #s-sm  { left: 32px;  top: 166px; }  /* angle 167.14° */
+  .stage.optimized #s-oc  { left: 51px;  top: 86px; }   /* angle 218.57° */
+
+  /* Family → T2 (rect 190×80, origin 300,40) – 4 guests: 3 top, 1 bottom */
+  .stage.optimized #s-jw  { left: 333px; top: 25px; }   /* top-left    */
+  .stage.optimized #s-cw  { left: 380px; top: 25px; }   /* top-center  */
+  .stage.optimized #s-ed  { left: 428px; top: 25px; }   /* top-right   */
+  .stage.optimized #s-ew  { left: 380px; top: 105px; }  /* bottom-center */
+
+  /* Friends → T3 (round, center 385,325, R=90) – 7 guests at 51.43° intervals */
+  .stage.optimized #s-hr  { left: 370px; top: 220px; }  /* angle -90°    */
+  .stage.optimized #s-lc  { left: 440px; top: 254px; }  /* angle -38.57° */
+  .stage.optimized #s-dt  { left: 458px; top: 330px; }  /* angle 12.86°  */
+  .stage.optimized #s-ml  { left: 409px; top: 391px; }  /* angle 64.29°  */
+  .stage.optimized #s-mt  { left: 331px; top: 391px; }  /* angle 115.71° */
+  .stage.optimized #s-rm  { left: 282px; top: 330px; }  /* angle 167.14° */
+  .stage.optimized #s-aj  { left: 300px; top: 254px; }  /* angle 218.57° */
+
+  /* Stagger the seat transitions */
+  .stage.optimized #s-jw  { transition-delay: 0.0s; }
+  .stage.optimized #s-cw  { transition-delay: 0.08s; }
+  .stage.optimized #s-hr  { transition-delay: 0.12s; }
+  .stage.optimized #s-sg  { transition-delay: 0.16s; }
+  .stage.optimized #s-sm  { transition-delay: 0.20s; }
+  .stage.optimized #s-oc  { transition-delay: 0.24s; }
+  .stage.optimized #s-dt  { transition-delay: 0.10s; }
+  .stage.optimized #s-ml  { transition-delay: 0.18s; }
+  .stage.optimized #s-aj  { transition-delay: 0.14s; }
+  .stage.optimized #s-lc  { transition-delay: 0.22s; }
+  .stage.optimized #s-bt  { transition-delay: 0.06s; }
+  .stage.optimized #s-nm  { transition-delay: 0.10s; }
+  .stage.optimized #s-ib  { transition-delay: 0.14s; }
+  .stage.optimized #s-lg  { transition-delay: 0.18s; }
+  .stage.optimized #s-ed  { transition-delay: 0.04s; }
+  .stage.optimized #s-ew  { transition-delay: 0.08s; }
+  .stage.optimized #s-mt  { transition-delay: 0.12s; }
+  .stage.optimized #s-rm  { transition-delay: 0.16s; }
+
+  /* Pop effect when seats arrive */
+  .stage.optimized .seat {
+    animation: seatSettle 0.4s 1.4s both;
+  }
+  @keyframes seatSettle {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(1.15); }
+    100% { transform: scale(1); }
+  }
+
+  /* ── Sidebar Panel ── */
+  .sidebar {
+    width: 300px;
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .sidebar-icons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-icon {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    color: var(--text-dim);
+    cursor: pointer;
+    position: relative;
+    border: 1px solid transparent;
+  }
+  .sidebar-icon:hover { background: var(--surface-2); }
+  .sidebar-icon.active { color: var(--gold); border-color: var(--gold); background: var(--gold-dim); }
+  .sidebar-icon .badge {
+    position: absolute; top: 2px; right: 2px;
+    font-size: 7px; font-weight: 700;
+    background: var(--gold);
+    color: var(--bg);
+    border-radius: 50%;
+    width: 12px; height: 12px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sidebar-collapse {
+    margin-left: auto;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* Lightning bolt button */
+  .optimize-btn {
+    position: relative;
+    color: var(--orange);
+    font-size: 16px;
+    font-weight: bold;
+  }
+  /* Click flash effect */
+  .optimize-btn::after {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 8px;
+    background: var(--gold);
+    opacity: 0;
+    z-index: -1;
+  }
+  .stage.clicking .optimize-btn::after {
+    animation: clickFlash 0.4s forwards;
+  }
+  @keyframes clickFlash {
+    0%   { opacity: 0; transform: scale(0.8); }
+    30%  { opacity: 0.6; transform: scale(1.1); }
+    100% { opacity: 0; transform: scale(1.3); }
+  }
+  .stage.clicking .optimize-btn {
+    animation: btnPulse 0.3s;
+  }
+  @keyframes btnPulse {
+    0%   { transform: scale(1); }
+    50%  { transform: scale(0.85); }
+    100% { transform: scale(1); }
+  }
+
+  /* Stats row */
+  .sidebar-stats {
+    display: flex;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+  .stat-item { flex: 1; text-align: center; }
+  .stat-val { font-size: 18px; font-weight: 300; }
+  .stat-val.green { color: var(--green); }
+  .stat-val.orange { color: var(--orange); }
+  .stat-label { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); margin-top: 2px; }
+
+  /* Guest list in sidebar */
+  .sidebar-body {
+    flex: 1;
+    overflow: hidden;
+    padding: 12px 16px;
+  }
+  .sidebar-section-label {
+    font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--text-dim); margin-bottom: 8px; font-weight: 600;
+  }
+  .guest-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.04);
+    margin-bottom: 4px;
+    transition: border-color 0.4s, background 0.4s;
+  }
+  .guest-card .mini-avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: var(--bg);
+  }
+  .guest-card-info { flex: 1; }
+  .guest-card-name { font-size: 12px; font-weight: 500; }
+  .guest-card-org { font-size: 10px; color: var(--text-dim); }
+  .guest-card-table {
+    font-size: 9px; padding: 2px 8px; border-radius: 3px;
+    border: 1px solid var(--border); color: var(--text-dim);
+    transition: all 0.4s;
+  }
+  .guest-card-group {
+    font-size: 8px; padding: 1px 6px; border-radius: 3px; margin-top: 2px;
+    display: inline-block;
+  }
+  .group-family { background: rgba(86,200,200,0.2); color: var(--cyan); }
+  .group-friends { background: rgba(200,120,150,0.2); color: var(--pink); }
+  .group-work { background: rgba(212,168,83,0.2); color: var(--gold); }
+
+  /* After optimization - highlight reassigned guests */
+  .stage.optimized .guest-card.reassigned {
+    border-color: var(--gold-dim);
+    background: rgba(212,168,83,0.05);
+  }
+  .stage.optimized .guest-card.reassigned .guest-card-table {
+    border-color: var(--green);
+    color: var(--green);
+  }
+
+  /* ── Animated Cursor ── */
+  .cursor {
+    position: absolute;
+    width: 16px; height: 16px;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+  }
+  .cursor::before {
+    content: '';
+    position: absolute;
+    width: 0; height: 0;
+    border-left: 7px solid white;
+    border-top: 0px solid transparent;
+    border-bottom: 10px solid transparent;
+    border-right: 5px solid transparent;
+    filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+  }
+  .cursor::after {
+    content: '';
+    position: absolute;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    top: -4px; left: -4px;
+  }
+
+  /* Cursor animation */
+  .cursor {
+    animation: cursorMove 16s infinite;
+  }
+  @keyframes cursorMove {
+    0%      { left: 350px; top: 300px; opacity: 0; }
+    5%      { left: 350px; top: 300px; opacity: 1; }
+    /* Move toward lightning bolt button - approximate position */
+    14%     { left: 680px; top: 50px; opacity: 1; }
+    15.5%   { left: 680px; top: 50px; opacity: 1; }
+    /* Click */
+    16%     { left: 680px; top: 50px; opacity: 1; transform: scale(0.8); }
+    17%     { left: 680px; top: 50px; opacity: 1; transform: scale(1); }
+    /* Fade out */
+    22%     { left: 680px; top: 50px; opacity: 0; }
+    100%    { opacity: 0; }
+  }
+
+  /* ── Processing overlay ── */
+  .processing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 15, 15, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .processing-spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--border);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    opacity: 0;
+  }
+  .stage.processing .processing-overlay { opacity: 1; }
+  .stage.processing .processing-spinner {
+    opacity: 1;
+    animation: spin 0.6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── "Optimized!" badge ── */
+  .optimized-badge {
+    position: absolute;
+    top: 50%;
+    left: calc(50% - 150px); /* center in canvas area */
+    transform: translate(-50%, -50%) scale(0);
+    background: var(--surface);
+    border: 1px solid var(--green);
+    border-radius: 12px;
+    padding: 16px 32px;
+    z-index: 60;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(76, 175, 80, 0.2);
+    opacity: 0;
+  }
+  .optimized-badge .badge-icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+  .optimized-badge .badge-title {
+    font-family: var(--serif);
+    font-size: 20px;
+    color: var(--green);
+  }
+  .optimized-badge .badge-detail {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+  .stage.complete .optimized-badge {
+    animation: badgeIn 0.5s forwards;
+  }
+  @keyframes badgeIn {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    60%  { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  }
+
+  /* ── Conflict indicators (before optimization) ── */
+  .conflict-line {
+    position: absolute;
+    height: 2px;
+    background: var(--red);
+    opacity: 0.4;
+    z-index: 4;
+    transform-origin: left center;
+  }
+  .stage.optimized .conflict-line { opacity: 0; transition: opacity 0.3s; }
+
+  /* Table group labels that appear after optimization */
+  .table-group-label {
+    position: absolute;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-weight: 600;
+    opacity: 0;
+    transition: opacity 0.5s;
+    z-index: 6;
+  }
+  .stage.optimized .table-group-label { opacity: 1; }
+  .tgl-work   { left: 115px; top: 270px; color: var(--gold); }
+  .tgl-family { left: 365px; top: 145px; color: var(--cyan); }
+  .tgl-friends { left: 355px; top: 435px; color: var(--pink); }
+
+  /* ── Full loop animation controller via JS ── */
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- Nav -->
+  <div class="nav">
+    <span class="nav-back">&larr; Events</span>
+    <div class="nav-tabs">
+      <span class="nav-tab active">Canvas</span>
+      <span class="nav-tab">Guests</span>
+      <span class="nav-tab">RSVPs</span>
+    </div>
+    <div class="nav-right">
+      Sarah & Tom's Wedding
+      <span style="font-size:9px; padding:3px 8px; border:1px solid var(--green); color:var(--green); border-radius:4px; font-weight:600; letter-spacing:1px;">BETA</span>
+      <div class="nav-avatar">N</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="tool-btn green">+ Add Table</div>
+    <div class="tool-btn gold">+ Add Guest</div>
+    <div class="tool-spacer"></div>
+    <div class="tool-btn">Canvas Tools</div>
+    <div class="tool-btn">Go to Table</div>
+  </div>
+
+  <!-- Content: Canvas + Sidebar -->
+  <div class="content">
+
+    <!-- Canvas Area -->
+    <div class="canvas-area">
+
+      <!-- Table 1: Round (Work) -->
+      <div class="table-circle t1">
+        <div class="table-name">Table 1</div>
+        <div class="table-cap before" id="cap1">7/8</div>
+      </div>
+
+      <!-- Table 2: Rect (Family) -->
+      <div class="table-rect t2">
+        <div class="table-name">Table 2</div>
+        <div class="table-cap before" id="cap2">6/10</div>
+      </div>
+
+      <!-- Table 3: Round (Friends) -->
+      <div class="table-circle t3">
+        <div class="table-name">Table 3</div>
+        <div class="table-cap before" id="cap3">4/8</div>
+      </div>
+
+      <!-- Guest seats - BEFORE positions (mixed groups) -->
+      <!-- Family (cyan) -->
+      <div class="seat family" id="s-jw">JW</div>
+      <div class="seat family" id="s-cw">CW</div>
+      <div class="seat family" id="s-ed">ED</div>
+      <div class="seat family" id="s-ew">EW</div>
+
+      <!-- Friends (pink) -->
+      <div class="seat friends" id="s-hr">HR</div>
+      <div class="seat friends" id="s-lc">LC</div>
+      <div class="seat friends" id="s-dt">DT</div>
+      <div class="seat friends" id="s-ml">ML</div>
+      <div class="seat friends" id="s-mt">MT</div>
+      <div class="seat friends" id="s-rm">RM</div>
+      <div class="seat friends" id="s-aj">AJ</div>
+
+      <!-- Work (gold) -->
+      <div class="seat work" id="s-bt">BT</div>
+      <div class="seat work" id="s-nm">NM</div>
+      <div class="seat work" id="s-ib">IB</div>
+      <div class="seat work" id="s-lg">LG</div>
+      <div class="seat work" id="s-sg">SG</div>
+      <div class="seat work" id="s-sm">SM</div>
+      <div class="seat work" id="s-oc">OC</div>
+
+      <!-- Table group labels (appear after optimization) -->
+      <div class="table-group-label tgl-work">Work</div>
+      <div class="table-group-label tgl-family">Family</div>
+      <div class="table-group-label tgl-friends">Friends</div>
+
+      <!-- Processing overlay -->
+      <div class="processing-overlay">
+        <div class="processing-spinner"></div>
+      </div>
+
+      <!-- Optimized badge -->
+      <div class="optimized-badge">
+        <div class="badge-icon">&#x26A1;</div>
+        <div class="badge-title">Seating Optimized</div>
+        <div class="badge-detail">18 guests rearranged by group</div>
+      </div>
+
+      <!-- Animated cursor -->
+      <div class="cursor"></div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-icons">
+        <div class="sidebar-icon active">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="sidebar-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+        </div>
+        <div class="sidebar-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span class="badge">2</span>
+        </div>
+        <div class="sidebar-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span class="badge">6</span>
+        </div>
+        <div class="sidebar-icon optimize-btn" id="optimizeBtn" title="Optimize Seating">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <div class="sidebar-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        </div>
+        <div class="sidebar-collapse">&lt;</div>
+      </div>
+
+      <div class="sidebar-stats">
+        <div class="stat-item"><div class="stat-val">18</div><div class="stat-label">Total</div></div>
+        <div class="stat-item"><div class="stat-val green">16</div><div class="stat-label">Confirmed</div></div>
+        <div class="stat-item"><div class="stat-val orange">2</div><div class="stat-label">Pending</div></div>
+        <div class="stat-item"><div class="stat-val">18</div><div class="stat-label">Seated</div></div>
+      </div>
+
+      <div class="sidebar-body">
+        <div class="sidebar-section-label">Assigned (18)</div>
+        <div class="guest-card reassigned" id="gc-jw">
+          <div class="mini-avatar" style="background:var(--cyan);">JW</div>
+          <div class="guest-card-info">
+            <div class="guest-card-name">James Wilson</div>
+            <div class="guest-card-org">City Hospital</div>
+            <div class="guest-card-group group-family">Family</div>
+          </div>
+          <div class="guest-card-table" id="gt-jw">Table 1</div>
+        </div>
+        <div class="guest-card reassigned" id="gc-hr">
+          <div class="mini-avatar" style="background:var(--pink);">HR</div>
+          <div class="guest-card-info">
+            <div class="guest-card-name">Harper Reed</div>
+            <div class="guest-card-org">Shopify</div>
+            <div class="guest-card-group group-friends">Friends</div>
+          </div>
+          <div class="guest-card-table" id="gt-hr">Table 1</div>
+        </div>
+        <div class="guest-card" id="gc-bt">
+          <div class="mini-avatar" style="background:var(--gold);">BT</div>
+          <div class="guest-card-info">
+            <div class="guest-card-name">Benjamin Taylor</div>
+            <div class="guest-card-org">Taylor Ventures</div>
+            <div class="guest-card-group group-work">Work</div>
+          </div>
+          <div class="guest-card-table">Table 1</div>
+        </div>
+        <div class="guest-card reassigned" id="gc-sg">
+          <div class="mini-avatar" style="background:var(--gold);">SG</div>
+          <div class="guest-card-info">
+            <div class="guest-card-name">Sofia Garcia</div>
+            <div class="guest-card-org">Acme Corp</div>
+            <div class="guest-card-group group-work">Work</div>
+          </div>
+          <div class="guest-card-table" id="gt-sg">Table 2</div>
+        </div>
+        <div class="guest-card reassigned" id="gc-dt">
+          <div class="mini-avatar" style="background:var(--pink);">DT</div>
+          <div class="guest-card-info">
+            <div class="guest-card-name">Daniel Thompson</div>
+            <div class="guest-card-org">Google</div>
+            <div class="guest-card-group group-friends">Friends</div>
+          </div>
+          <div class="guest-card-table" id="gt-dt">Table 2</div>
+        </div>
+        <div class="guest-card reassigned" id="gc-cw">
+          <div class="mini-avatar" style="background:var(--cyan);">CW</div>
+          <div class="guest-card-info">
+            <div class="guest-card-name">Charlotte White</div>
+            <div class="guest-card-org">White Media</div>
+            <div class="guest-card-group group-family">Family</div>
+          </div>
+          <div class="guest-card-table" id="gt-cw">Table 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Animation loop controller
+  const stage = document.getElementById('stage');
+  const tableUpdates = {
+    'cap1': ['7/8', '7/8'],  // work: 7 guests
+    'cap2': ['6/10', '4/10'], // family: 4 guests
+    'cap3': ['4/8', '7/8'],  // friends: 7 guests
+  };
+  const sidebarUpdates = {
+    'gt-jw': ['Table 1', 'Table 2'],
+    'gt-hr': ['Table 1', 'Table 3'],
+    'gt-sg': ['Table 2', 'Table 1'],
+    'gt-dt': ['Table 2', 'Table 3'],
+    'gt-cw': ['Table 1', 'Table 2'],
+  };
+
+  function runCycle() {
+    // Reset
+    stage.classList.remove('clicking', 'processing', 'optimized', 'complete');
+    Object.entries(tableUpdates).forEach(([id, [before]]) => {
+      document.getElementById(id).textContent = before;
+      document.getElementById(id).classList.add('before');
+    });
+    Object.entries(sidebarUpdates).forEach(([id, [before]]) => {
+      if (document.getElementById(id)) document.getElementById(id).textContent = before;
+    });
+
+    // 2.5s: Click effect
+    setTimeout(() => stage.classList.add('clicking'), 2500);
+    setTimeout(() => stage.classList.remove('clicking'), 2900);
+
+    // 3s: Processing
+    setTimeout(() => stage.classList.add('processing'), 3000);
+    setTimeout(() => stage.classList.remove('processing'), 3500);
+
+    // 3.5s: Optimize - move guests
+    setTimeout(() => {
+      stage.classList.add('optimized');
+      Object.entries(tableUpdates).forEach(([id, [, after]]) => {
+        document.getElementById(id).textContent = after;
+        document.getElementById(id).classList.remove('before');
+      });
+      Object.entries(sidebarUpdates).forEach(([id, [, after]]) => {
+        if (document.getElementById(id)) document.getElementById(id).textContent = after;
+      });
+    }, 3500);
+
+    // 6s: Show optimized badge
+    setTimeout(() => stage.classList.add('complete'), 6000);
+
+    // 14s: Start next cycle
+    setTimeout(runCycle, 14000);
+  }
+
+  // Start
+  setTimeout(runCycle, 500);
+</script>
+
+</body>
+</html>

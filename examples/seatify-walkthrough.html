@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seatify – Animated Walkthrough</title>
+<style>
+  /* ── Fonts ── */
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+  /* ── Reset & Base ── */
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface-2: #222;
+    --border: #333;
+    --border-gold: #d4a853;
+    --gold: #d4a853;
+    --gold-dim: rgba(212, 168, 83, 0.3);
+    --text: #e8e4dc;
+    --text-dim: #888;
+    --green: #4caf50;
+    --green-dim: rgba(76, 175, 80, 0.25);
+    --orange: #e8943a;
+    --red: #e05555;
+    --cyan: #56c8c8;
+    --pink: #c87896;
+    --purple: #8a7bc8;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Stage ── */
+  .stage {
+    width: 900px;
+    height: 620px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+  }
+
+  /* ── Scenes ── */
+  .scene {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scene timing:
+     Scene 1 (Dashboard):  0s  – 6s
+     Scene 2 (Guests):     6s  – 13s
+     Scene 3 (Canvas):     13s – 21s
+     Scene 4 (RSVPs):      21s – 28s
+     Total loop: 28s
+  */
+
+  .scene-1 { animation: scene1 28s infinite; }
+  .scene-2 { animation: scene2 28s infinite; }
+  .scene-3 { animation: scene3 28s infinite; }
+  .scene-4 { animation: scene4 28s infinite; }
+
+  @keyframes scene1 {
+    0%      { opacity: 0; transform: scale(0.97); }
+    1%      { opacity: 1; transform: scale(1); }
+    19%     { opacity: 1; transform: scale(1); }
+    21.4%   { opacity: 0; transform: scale(1.02); }
+    100%    { opacity: 0; }
+  }
+  @keyframes scene2 {
+    0%      { opacity: 0; }
+    19%     { opacity: 0; transform: scale(0.97); }
+    21.4%   { opacity: 1; transform: scale(1); }
+    44.6%   { opacity: 1; transform: scale(1); }
+    46.4%   { opacity: 0; transform: scale(1.02); }
+    100%    { opacity: 0; }
+  }
+  @keyframes scene3 {
+    0%      { opacity: 0; }
+    44.6%   { opacity: 0; transform: scale(0.97); }
+    46.4%   { opacity: 1; transform: scale(1); }
+    73.2%   { opacity: 1; transform: scale(1); }
+    75%     { opacity: 0; transform: scale(1.02); }
+    100%    { opacity: 0; }
+  }
+  @keyframes scene4 {
+    0%      { opacity: 0; }
+    73.2%   { opacity: 0; transform: scale(0.97); }
+    75%     { opacity: 1; transform: scale(1); }
+    96.4%   { opacity: 1; transform: scale(1); }
+    100%    { opacity: 0; transform: scale(0.97); }
+  }
+
+  /* ── Shared Nav Bar ── */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .nav-logo {
+    font-family: var(--serif);
+    font-size: 18px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .nav-tabs {
+    display: flex;
+    gap: 24px;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .nav-tab { color: var(--text-dim); }
+  .nav-tab.active { color: var(--text); border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .nav-beta {
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border: 1px solid var(--green);
+    color: var(--green);
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .nav-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--bg);
+  }
+
+  /* ── Section Labels ── */
+  .section-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .section-num {
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--gold);
+    font-size: 13px;
+    margin-right: 8px;
+  }
+
+  /* ═══════════════════════════════════════
+     SCENE 1 – DASHBOARD
+     ═══════════════════════════════════════ */
+  .dash-content {
+    padding: 32px 40px;
+    flex: 1;
+  }
+  .dash-header {
+    margin-bottom: 8px;
+  }
+  .dash-title {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 400;
+    margin-top: 8px;
+  }
+  .dash-title em { font-style: italic; color: var(--gold); }
+  .dash-subtitle {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-top: 6px;
+  }
+  .dash-new-event {
+    margin-top: 16px;
+    padding: 10px;
+    background: var(--gold);
+    color: var(--bg);
+    text-align: center;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  /* Event Cards */
+  .events-section {
+    margin-top: 28px;
+  }
+  .events-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .events-title {
+    font-family: var(--serif);
+    font-size: 20px;
+  }
+  .events-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+  }
+  .event-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    background: var(--surface);
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  .scene-1 .event-card:nth-child(1) { animation: cardIn 0.6s 1.0s forwards; }
+  .scene-1 .event-card:nth-child(2) { animation: cardIn 0.6s 1.4s forwards; }
+  .scene-1 .event-card:nth-child(3) { animation: cardIn 0.6s 1.8s forwards; }
+
+  @keyframes cardIn {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-type {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+  .card-num {
+    float: right;
+    font-family: var(--serif);
+    font-style: italic;
+    color: var(--gold);
+    font-size: 13px;
+  }
+  .card-name {
+    font-size: 15px;
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .card-date {
+    display: inline-block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .card-stats {
+    display: flex;
+    gap: 20px;
+    margin-top: 14px;
+  }
+  .card-stat-val {
+    font-size: 20px;
+    font-weight: 300;
+  }
+  .card-stat-label {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* Stat count-up animation */
+  .scene-1 .count-up {
+    display: inline-block;
+    animation: countPop 0.4s 2.4s both;
+  }
+  @keyframes countPop {
+    0%   { transform: scale(0.5); opacity: 0; }
+    60%  { transform: scale(1.15); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ═══════════════════════════════════════
+     SCENE 2 – GUEST LIST
+     ═══════════════════════════════════════ */
+  .guest-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .toolbar-btn {
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border: 1px solid var(--border);
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toolbar-btn.gold {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: var(--bg);
+  }
+  .toolbar-btn.green {
+    background: transparent;
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .toolbar-search {
+    padding: 6px 14px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 12px;
+    width: 140px;
+  }
+  .toolbar-filter {
+    font-size: 11px;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    padding: 6px 12px;
+    border-radius: 6px;
+  }
+  .toolbar-spacer { flex: 1; }
+
+  /* Guest Table */
+  .guest-table {
+    flex: 1;
+    overflow: hidden;
+  }
+  .guest-header-row {
+    display: grid;
+    grid-template-columns: 36px 220px 80px 100px 80px;
+    padding: 10px 24px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+  }
+  .guest-row {
+    display: grid;
+    grid-template-columns: 36px 220px 80px 100px 80px;
+    padding: 10px 24px;
+    align-items: center;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  .scene-2 .guest-row:nth-child(1) { animation: rowSlide 0.35s 0.6s forwards; }
+  .scene-2 .guest-row:nth-child(2) { animation: rowSlide 0.35s 0.8s forwards; }
+  .scene-2 .guest-row:nth-child(3) { animation: rowSlide 0.35s 1.0s forwards; }
+  .scene-2 .guest-row:nth-child(4) { animation: rowSlide 0.35s 1.2s forwards; }
+  .scene-2 .guest-row:nth-child(5) { animation: rowSlide 0.35s 1.4s forwards; }
+  .scene-2 .guest-row:nth-child(6) { animation: rowSlide 0.35s 1.6s forwards; }
+  .scene-2 .guest-row:nth-child(7) { animation: rowSlide 0.35s 1.8s forwards; }
+
+  /* Highlight a row to show RSVP coming in */
+  .scene-2 .guest-row.highlight-rsvp {
+    animation: rowSlide 0.35s 1.4s forwards, rsvpFlash 0.8s 3.5s forwards;
+  }
+  @keyframes rsvpFlash {
+    0%   { background: transparent; }
+    30%  { background: var(--green-dim); }
+    100% { background: transparent; }
+  }
+
+  @keyframes rowSlide {
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .guest-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 600; color: var(--bg);
+  }
+  .guest-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .guest-name { font-size: 13px; font-weight: 500; }
+  .guest-org { font-size: 11px; color: var(--text-dim); }
+  .guest-group {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .rsvp-badge {
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 4px;
+  }
+  .rsvp-confirmed { background: var(--green-dim); color: var(--green); }
+  .rsvp-pending   { background: rgba(232, 148, 58, 0.2); color: var(--orange); }
+  .table-badge {
+    font-size: 10px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  /* RSVP status change animation */
+  .scene-2 .rsvp-animate {
+    animation: rsvpChange 0.6s 3.5s forwards;
+  }
+  @keyframes rsvpChange {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.2); background: var(--green-dim); color: var(--green); }
+    100% { transform: scale(1); background: var(--green-dim); color: var(--green); }
+  }
+
+  /* ═══════════════════════════════════════
+     SCENE 3 – SEATING CANVAS
+     ═══════════════════════════════════════ */
+  .canvas-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .canvas-area {
+    flex: 1;
+    position: relative;
+    background:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(255,255,255,0.03) 39px, rgba(255,255,255,0.03) 40px);
+    overflow: hidden;
+  }
+
+  /* Round Table */
+  .table-round {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .table-round.active { border-color: var(--cyan); }
+  .table-label {
+    font-size: 14px;
+    font-weight: 500;
+  }
+  .table-capacity {
+    font-size: 11px;
+    color: var(--gold);
+    margin-top: 2px;
+  }
+
+  /* Rect Table */
+  .table-rect {
+    position: absolute;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+  }
+
+  /* Guest seats around table */
+  .seat {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600;
+    color: var(--bg);
+    border: 2px solid;
+  }
+  .seat.family   { background: var(--gold); border-color: var(--cyan); }
+  .seat.friends  { background: var(--gold); border-color: var(--gold); }
+  .seat.work     { background: var(--gold); border-color: var(--pink); }
+  .seat.empty    { background: transparent; border-color: var(--border); border-style: dashed; }
+
+  /* Table 1 - round, top-left */
+  .t1 { width: 150px; height: 150px; left: 80px; top: 100px; }
+  .t1 .seat:nth-child(1) { top: -16px; left: 20px; }
+  .t1 .seat:nth-child(2) { top: -16px; right: 20px; }
+  .t1 .seat:nth-child(3) { top: 25px; right: -16px; }
+  .t1 .seat:nth-child(4) { bottom: 25px; right: -16px; }
+  .t1 .seat:nth-child(5) { bottom: -16px; right: 20px; }
+  .t1 .seat:nth-child(6) { bottom: -16px; left: 20px; }
+  .t1 .seat:nth-child(7) { bottom: 25px; left: -16px; }
+  .t1 .seat:nth-child(8) { top: 25px; left: -16px; }
+
+  /* Table 2 - rect, top-right */
+  .t2 { width: 180px; height: 80px; left: 420px; top: 80px; border-radius: 6px; }
+  .t2-seats .seat:nth-child(1) { top: -16px; left: 20px; }
+  .t2-seats .seat:nth-child(2) { top: -16px; left: 76px; }
+  .t2-seats .seat:nth-child(3) { top: -16px; right: 20px; }
+  .t2-seats .seat:nth-child(4) { bottom: -16px; left: 20px; }
+  .t2-seats .seat:nth-child(5) { bottom: -16px; left: 76px; }
+  .t2-seats .seat:nth-child(6) { bottom: -16px; right: 20px; }
+  .t2-seats-wrap { position: absolute; left: 420px; top: 80px; width: 180px; height: 80px; }
+
+  /* Table 3 - round, bottom-center */
+  .t3 { width: 140px; height: 140px; left: 350px; top: 300px; }
+  .t3 .seat:nth-child(1) { top: -16px; left: 56px; }
+  .t3 .seat:nth-child(2) { top: 15px; right: -16px; }
+  .t3 .seat:nth-child(3) { bottom: 15px; right: -16px; }
+  .t3 .seat:nth-child(4) { bottom: -16px; left: 56px; }
+  .t3 .seat:nth-child(5) { bottom: 15px; left: -16px; }
+  .t3 .seat:nth-child(6) { top: 15px; left: -16px; }
+
+  /* Seat appear animations */
+  .canvas-area .seat {
+    opacity: 0;
+    transform: scale(0);
+  }
+  .scene-3 .t1 .seat:nth-child(1) { animation: seatPop 0.3s 0.8s forwards; }
+  .scene-3 .t1 .seat:nth-child(2) { animation: seatPop 0.3s 0.9s forwards; }
+  .scene-3 .t1 .seat:nth-child(3) { animation: seatPop 0.3s 1.0s forwards; }
+  .scene-3 .t1 .seat:nth-child(4) { animation: seatPop 0.3s 1.1s forwards; }
+  .scene-3 .t1 .seat:nth-child(5) { animation: seatPop 0.3s 1.2s forwards; }
+  .scene-3 .t1 .seat:nth-child(6) { animation: seatPop 0.3s 1.3s forwards; }
+  .scene-3 .t1 .seat:nth-child(7) { animation: seatPop 0.3s 1.4s forwards; }
+  .scene-3 .t1 .seat:nth-child(8) { animation: seatPop 0.3s 1.5s forwards; }
+
+  .scene-3 .t2-seats-wrap .seat:nth-child(1) { animation: seatPop 0.3s 2.0s forwards; }
+  .scene-3 .t2-seats-wrap .seat:nth-child(2) { animation: seatPop 0.3s 2.1s forwards; }
+  .scene-3 .t2-seats-wrap .seat:nth-child(3) { animation: seatPop 0.3s 2.2s forwards; }
+  .scene-3 .t2-seats-wrap .seat:nth-child(4) { animation: seatPop 0.3s 2.3s forwards; }
+
+  .scene-3 .t3 .seat:nth-child(1) { animation: seatPop 0.3s 3.2s forwards; }
+  .scene-3 .t3 .seat:nth-child(2) { animation: seatPop 0.3s 3.3s forwards; }
+  .scene-3 .t3 .seat:nth-child(3) { animation: seatPop 0.3s 3.4s forwards; }
+  .scene-3 .t3 .seat:nth-child(4) { animation: seatPop 0.3s 3.5s forwards; }
+  .scene-3 .t3 .seat:nth-child(5) { animation: seatPop 0.3s 3.6s forwards; }
+  .scene-3 .t3 .seat:nth-child(6) { animation: seatPop 0.3s 3.7s forwards; }
+
+  @keyframes seatPop {
+    0%   { opacity: 0; transform: scale(0); }
+    70%  { opacity: 1; transform: scale(1.2); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
+  /* Table border glow when filling */
+  .scene-3 .t1 { animation: tableGlow 0.6s 1.5s forwards; }
+  .scene-3 .t2 { animation: tableGlow 0.6s 2.3s forwards; }
+  .scene-3 .t3 { animation: tableGlow 0.6s 3.7s forwards; }
+  @keyframes tableGlow {
+    0%   { border-color: var(--border); }
+    50%  { border-color: var(--gold); box-shadow: 0 0 20px var(--gold-dim); }
+    100% { border-color: var(--cyan); box-shadow: none; }
+  }
+
+  /* Capacity counter update */
+  .scene-3 .cap-animate {
+    animation: capUpdate 0.3s 1.6s forwards;
+  }
+  .scene-3 .cap-animate-2 {
+    animation: capUpdate 0.3s 2.4s forwards;
+  }
+  .scene-3 .cap-animate-3 {
+    animation: capUpdate 0.3s 3.8s forwards;
+  }
+  @keyframes capUpdate {
+    0%   { color: var(--gold); transform: scale(1); }
+    50%  { color: var(--green); transform: scale(1.3); }
+    100% { color: var(--green); transform: scale(1); }
+  }
+
+  /* Animated cursor for drag effect */
+  .drag-cursor {
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: white;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 0 12px rgba(255,255,255,0.4);
+  }
+  .scene-3 .drag-cursor {
+    animation: cursorDrag 2.5s 2.6s forwards;
+  }
+  @keyframes cursorDrag {
+    0%   { opacity: 0; left: 700px; top: 200px; }
+    10%  { opacity: 0.9; left: 700px; top: 200px; }
+    50%  { opacity: 0.9; left: 390px; top: 340px; }
+    70%  { opacity: 0.9; left: 370px; top: 310px; }
+    80%  { opacity: 0; left: 370px; top: 310px; }
+    100% { opacity: 0; }
+  }
+
+  /* Dragged guest indicator */
+  .drag-ghost {
+    position: absolute;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px solid var(--cyan);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: var(--bg);
+    opacity: 0;
+    z-index: 9;
+    box-shadow: 0 4px 16px rgba(212,168,83,0.4);
+  }
+  .scene-3 .drag-ghost {
+    animation: ghostDrag 2.5s 2.6s forwards;
+  }
+  @keyframes ghostDrag {
+    0%   { opacity: 0; left: 693px; top: 193px; }
+    10%  { opacity: 1; left: 693px; top: 193px; transform: scale(1.15); }
+    50%  { opacity: 1; left: 383px; top: 333px; transform: scale(1.15); }
+    70%  { opacity: 1; left: 363px; top: 303px; transform: scale(1.15); }
+    75%  { opacity: 0; left: 363px; top: 303px; transform: scale(0.8); }
+    100% { opacity: 0; }
+  }
+
+  /* Guest sidebar panel */
+  .guest-sidebar {
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 42px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 10px;
+    gap: 4px;
+  }
+  .sidebar-label {
+    writing-mode: vertical-rl;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 8px;
+  }
+  .sidebar-count {
+    font-size: 11px;
+    color: var(--gold);
+    padding: 3px 0;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    width: 26px;
+    text-align: center;
+    margin-top: 4px;
+  }
+  .sidebar-arrow {
+    color: var(--gold);
+    font-size: 10px;
+    cursor: pointer;
+  }
+
+  /* Unassigned guests strip */
+  .unassigned-strip {
+    position: absolute;
+    right: 56px;
+    top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .unassigned-guest {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--gold);
+    border: 2px dashed var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: var(--bg);
+    opacity: 0;
+  }
+  .scene-3 .unassigned-guest:nth-child(1) { animation: seatPop 0.3s 0.5s forwards; }
+  .scene-3 .unassigned-guest:nth-child(2) { animation: seatPop 0.3s 0.6s forwards; }
+  .scene-3 .unassigned-guest:nth-child(3) { animation: seatPop 0.3s 0.7s forwards; }
+  .scene-3 .unassigned-guest:nth-child(4) { animation: seatPop 0.3s 0.8s forwards; }
+  .scene-3 .unassigned-guest:nth-child(5) { animation: seatPop 0.3s 0.9s forwards; }
+
+  /* ═══════════════════════════════════════
+     SCENE 4 – RSVP DASHBOARD
+     ═══════════════════════════════════════ */
+  .rsvp-content {
+    padding: 28px 40px;
+    flex: 1;
+  }
+  .rsvp-sub-tabs {
+    display: flex;
+    gap: 24px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+  .rsvp-sub-tab { color: var(--text-dim); }
+  .rsvp-sub-tab.active { color: var(--text); border-bottom: 1px solid var(--gold); padding-bottom: 12px; margin-bottom: -12px; }
+
+  .rsvp-link-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 24px;
+  }
+  .rsvp-link-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+  .rsvp-link-sublabel {
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .rsvp-link-url {
+    flex: 1;
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-family: monospace;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .rsvp-copy-btn {
+    color: var(--gold);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  /* Stats Cards */
+  .rsvp-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .rsvp-stat-card {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  .scene-4 .rsvp-stat-card:nth-child(1) { animation: cardIn 0.5s 0.5s forwards; }
+  .scene-4 .rsvp-stat-card:nth-child(2) { animation: cardIn 0.5s 0.7s forwards; }
+  .scene-4 .rsvp-stat-card:nth-child(3) { animation: cardIn 0.5s 0.9s forwards; }
+  .scene-4 .rsvp-stat-card:nth-child(4) { animation: cardIn 0.5s 1.1s forwards; }
+
+  .stat-value {
+    font-family: var(--serif);
+    font-size: 36px;
+    font-weight: 400;
+  }
+  .stat-value.green  { color: var(--green); }
+  .stat-value.gold   { color: var(--gold); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-value.red    { color: var(--red); }
+  .stat-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .stat-detail {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* Animated counter */
+  .scene-4 .stat-counter {
+    display: inline-block;
+    animation: counterRoll 1.2s 1.5s both;
+  }
+  @keyframes counterRoll {
+    0%   { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Response rate circle animation */
+  .rate-ring {
+    width: 60px; height: 60px;
+    border-radius: 50%;
+    margin: 0 auto 6px;
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rate-ring svg {
+    position: absolute;
+    width: 100%; height: 100%;
+    transform: rotate(-90deg);
+  }
+  .rate-ring circle {
+    fill: none;
+    stroke-width: 4;
+    cx: 30; cy: 30; r: 26;
+  }
+  .rate-ring .ring-bg { stroke: var(--border); }
+  .rate-ring .ring-fill {
+    stroke: var(--green);
+    stroke-dasharray: 163.4;
+    stroke-dashoffset: 163.4;
+    stroke-linecap: round;
+  }
+  .scene-4 .ring-fill {
+    animation: ringFill 1.5s 1.5s forwards ease-out;
+  }
+  @keyframes ringFill {
+    to { stroke-dashoffset: 18; } /* ~89% of 163.4 */
+  }
+  .rate-text {
+    font-family: var(--serif);
+    font-size: 16px;
+    z-index: 1;
+    color: var(--green);
+  }
+
+  /* Recent responses list */
+  .rsvp-responses-section {
+    margin-top: 8px;
+  }
+  .rsvp-responses-title {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .response-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    opacity: 0;
+  }
+  .scene-4 .response-row:nth-child(1) { animation: rowSlide 0.3s 2.2s forwards; }
+  .scene-4 .response-row:nth-child(2) { animation: rowSlide 0.3s 2.5s forwards; }
+  .scene-4 .response-row:nth-child(3) { animation: rowSlide 0.3s 2.8s forwards; }
+
+  .response-avatar {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 600; color: var(--bg);
+  }
+  .response-name { font-size: 12px; flex: 1; }
+  .response-status {
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .response-status.attending { color: var(--green); }
+  .response-time { font-size: 11px; color: var(--text-dim); }
+
+  /* ── Scene Badge / Step Indicator ── */
+  .scene-badge {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 20;
+  }
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border);
+    transition: background 0.3s;
+  }
+  .step-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    position: absolute;
+    bottom: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    white-space: nowrap;
+    opacity: 0;
+  }
+
+  /* Step dot and label animations synced with scenes */
+  .scene-badge .dot-1 { animation: dotActive1 28s infinite; }
+  .scene-badge .dot-2 { animation: dotActive2 28s infinite; }
+  .scene-badge .dot-3 { animation: dotActive3 28s infinite; }
+  .scene-badge .dot-4 { animation: dotActive4 28s infinite; }
+
+  .scene-badge .label-1 { animation: labelShow1 28s infinite; }
+  .scene-badge .label-2 { animation: labelShow2 28s infinite; }
+  .scene-badge .label-3 { animation: labelShow3 28s infinite; }
+  .scene-badge .label-4 { animation: labelShow4 28s infinite; }
+
+  @keyframes dotActive1 {
+    0%, 19%   { background: var(--gold); }
+    21.4%, 100% { background: var(--border); }
+  }
+  @keyframes dotActive2 {
+    0%, 19%   { background: var(--border); }
+    21.4%, 44.6% { background: var(--gold); }
+    46.4%, 100% { background: var(--border); }
+  }
+  @keyframes dotActive3 {
+    0%, 44.6%   { background: var(--border); }
+    46.4%, 73.2% { background: var(--gold); }
+    75%, 100%   { background: var(--border); }
+  }
+  @keyframes dotActive4 {
+    0%, 73.2%  { background: var(--border); }
+    75%, 96.4% { background: var(--gold); }
+    100%       { background: var(--border); }
+  }
+
+  @keyframes labelShow1 {
+    0%    { opacity: 0; }
+    1%    { opacity: 1; }
+    19%   { opacity: 1; }
+    21.4% { opacity: 0; }
+    100%  { opacity: 0; }
+  }
+  @keyframes labelShow2 {
+    0%, 19%     { opacity: 0; }
+    21.4%       { opacity: 1; }
+    44.6%       { opacity: 1; }
+    46.4%, 100% { opacity: 0; }
+  }
+  @keyframes labelShow3 {
+    0%, 44.6%   { opacity: 0; }
+    46.4%       { opacity: 1; }
+    73.2%       { opacity: 1; }
+    75%, 100%   { opacity: 0; }
+  }
+  @keyframes labelShow4 {
+    0%, 73.2%  { opacity: 0; }
+    75%        { opacity: 1; }
+    96.4%      { opacity: 1; }
+    100%       { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- ════════ SCENE 1: DASHBOARD ════════ -->
+  <div class="scene scene-1">
+    <div class="nav">
+      <div class="nav-logo">Seatify.</div>
+      <div class="nav-tabs">
+        <span class="nav-tab active">Events</span>
+      </div>
+      <div class="nav-right">
+        <span class="nav-beta">BETA</span>
+        <div class="nav-avatar">N</div>
+      </div>
+    </div>
+    <div class="dash-content">
+      <div class="dash-header">
+        <span class="section-num">01</span>
+        <span class="section-label">Dashboard</span>
+      </div>
+      <div class="dash-title">Welcome back, <em>neonwatty</em></div>
+      <div class="dash-subtitle">Your seating arrangements are looking excellent.</div>
+      <div class="dash-new-event">+ New Event</div>
+
+      <div class="events-section">
+        <div class="events-header">
+          <div>
+            <span class="section-num">02</span>
+            <span class="events-title">Your Events</span>
+          </div>
+        </div>
+        <div class="events-grid">
+          <div class="event-card">
+            <span class="card-num">01</span>
+            <div class="card-type">Wedding</div>
+            <div class="card-name">Sarah & Tom's Wedding</div>
+            <div class="card-date">Jun 15</div>
+            <div class="card-stats">
+              <div><div class="card-stat-val count-up">18</div><div class="card-stat-label">Guests</div></div>
+              <div><div class="card-stat-val count-up">13</div><div class="card-stat-label">Seated</div></div>
+            </div>
+          </div>
+          <div class="event-card">
+            <span class="card-num">02</span>
+            <div class="card-type">Gala</div>
+            <div class="card-name">Annual Company Gala</div>
+            <div class="card-stats" style="margin-top:22px;">
+              <div><div class="card-stat-val count-up">0</div><div class="card-stat-label">Guests</div></div>
+              <div><div class="card-stat-val count-up">0</div><div class="card-stat-label">Seated</div></div>
+            </div>
+          </div>
+          <div class="event-card">
+            <span class="card-num">03</span>
+            <div class="card-type">Wedding</div>
+            <div class="card-name">Demo Event</div>
+            <div class="card-date">Jun 15</div>
+            <div class="card-stats">
+              <div><div class="card-stat-val count-up">18</div><div class="card-stat-label">Guests</div></div>
+              <div><div class="card-stat-val count-up">13</div><div class="card-stat-label">Seated</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ SCENE 2: GUEST LIST ════════ -->
+  <div class="scene scene-2">
+    <div class="nav">
+      <div class="nav-logo" style="font-size:13px; color: var(--text-dim);">&larr; Events</div>
+      <div class="nav-tabs">
+        <span class="nav-tab">Canvas</span>
+        <span class="nav-tab active">Guests</span>
+        <span class="nav-tab">RSVPs</span>
+      </div>
+      <div class="nav-right">
+        <span style="font-size:12px; color: var(--text-dim);">Sarah & Tom's Wedding</span>
+        <div class="nav-avatar">N</div>
+      </div>
+    </div>
+    <div class="guest-toolbar">
+      <div class="toolbar-btn green">+ Add Table</div>
+      <div class="toolbar-btn gold">+ Add Guest</div>
+      <div class="toolbar-btn" style="background: var(--surface-2);">List</div>
+      <div class="toolbar-btn">Relationships</div>
+      <input class="toolbar-search" value="Search guests..." disabled>
+      <div class="toolbar-spacer"></div>
+      <div class="toolbar-filter">All Status &#x25BE;</div>
+      <div class="toolbar-filter">All Tables &#x25BE;</div>
+    </div>
+    <div class="guest-table">
+      <div class="guest-header-row">
+        <span></span>
+        <span>Name</span>
+        <span>Group</span>
+        <span>RSVP</span>
+        <span>Table</span>
+      </div>
+      <div class="guest-row">
+        <div class="guest-avatar" style="background: var(--purple);">AJ</div>
+        <div class="guest-name-cell"><div><div class="guest-name">Ava Johnson</div><div class="guest-org">Netflix</div></div></div>
+        <div class="guest-group">Friends</div>
+        <div class="rsvp-badge rsvp-confirmed">Confirmed</div>
+        <div class="table-badge">Table 3</div>
+      </div>
+      <div class="guest-row">
+        <div class="guest-avatar" style="background: var(--gold);">BT</div>
+        <div class="guest-name-cell"><div><div class="guest-name">Benjamin Taylor</div><div class="guest-org">Taylor Ventures</div></div></div>
+        <div class="guest-group">Work</div>
+        <div class="rsvp-badge rsvp-confirmed">Confirmed</div>
+        <div class="table-badge">Table 1</div>
+      </div>
+      <div class="guest-row">
+        <div class="guest-avatar" style="background: var(--cyan);">CW</div>
+        <div class="guest-name-cell"><div><div class="guest-name">Charlotte White</div><div class="guest-org">White Media Group</div></div></div>
+        <div class="guest-group">Family</div>
+        <div class="rsvp-badge rsvp-confirmed">Confirmed</div>
+        <div class="table-badge">Table 2</div>
+      </div>
+      <div class="guest-row">
+        <div class="guest-avatar" style="background: var(--pink);">DT</div>
+        <div class="guest-name-cell"><div><div class="guest-name">Daniel Thompson</div><div class="guest-org">Google</div></div></div>
+        <div class="guest-group">Friends</div>
+        <div class="rsvp-badge rsvp-confirmed">Confirmed</div>
+        <div class="table-badge">Table 3</div>
+      </div>
+      <div class="guest-row highlight-rsvp">
+        <div class="guest-avatar" style="background: var(--gold);">IB</div>
+        <div class="guest-name-cell"><div><div class="guest-name">Isabella Brown</div><div class="guest-org">Brown Architecture</div></div></div>
+        <div class="guest-group">Work</div>
+        <div class="rsvp-badge rsvp-pending rsvp-animate">Pending</div>
+        <div class="table-badge">Table 1</div>
+      </div>
+      <div class="guest-row">
+        <div class="guest-avatar" style="background: var(--cyan);">JW</div>
+        <div class="guest-name-cell"><div><div class="guest-name">James Wilson</div><div class="guest-org">City Hospital</div></div></div>
+        <div class="guest-group">Family</div>
+        <div class="rsvp-badge rsvp-confirmed">Confirmed</div>
+        <div class="table-badge">Table 2</div>
+      </div>
+      <div class="guest-row">
+        <div class="guest-avatar" style="background: var(--purple);">LC</div>
+        <div class="guest-name-cell"><div><div class="guest-name">Liam Chen</div><div class="guest-org">Stripe</div></div></div>
+        <div class="guest-group">Friends</div>
+        <div class="rsvp-badge rsvp-confirmed">Confirmed</div>
+        <div class="table-badge">Table 1</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ SCENE 3: SEATING CANVAS ════════ -->
+  <div class="scene scene-3">
+    <div class="nav">
+      <div class="nav-logo" style="font-size:13px; color: var(--text-dim);">&larr; Events</div>
+      <div class="nav-tabs">
+        <span class="nav-tab active">Canvas</span>
+        <span class="nav-tab">Guests</span>
+        <span class="nav-tab">RSVPs</span>
+      </div>
+      <div class="nav-right">
+        <span style="font-size:12px; color: var(--text-dim);">Sarah & Tom's Wedding</span>
+        <div class="nav-avatar">N</div>
+      </div>
+    </div>
+    <div class="canvas-toolbar">
+      <div class="toolbar-btn green">+ Add Table</div>
+      <div class="toolbar-btn gold">+ Add Guest</div>
+      <div class="toolbar-spacer"></div>
+      <div class="toolbar-btn">Canvas Tools</div>
+      <div class="toolbar-btn">Go to Table</div>
+    </div>
+    <div class="canvas-area">
+      <!-- Table 1 - Round -->
+      <div class="table-round t1">
+        <div class="seat friends">BT</div>
+        <div class="seat work">IB</div>
+        <div class="seat work">SM</div>
+        <div class="seat work">NM</div>
+        <div class="seat friends">LC</div>
+        <div class="seat work">OC</div>
+        <div class="seat work">LG</div>
+        <div class="seat work">SG</div>
+        <div class="table-label">Table 1</div>
+        <div class="table-capacity cap-animate">8/8</div>
+      </div>
+
+      <!-- Table 2 - Rect -->
+      <div class="table-rect t2" style="width:180px; height:80px; left:420px; top:80px;">
+        <div class="table-label">Table 2</div>
+        <div class="table-capacity cap-animate-2">4/10</div>
+      </div>
+      <div class="t2-seats-wrap" style="position:absolute; left:420px; top:80px; width:180px; height:80px;">
+        <div class="seat family" style="position:absolute; top:-16px; left:20px;">JW</div>
+        <div class="seat family" style="position:absolute; top:-16px; left:76px;">CW</div>
+        <div class="seat family" style="position:absolute; top:-16px; right:20px;">ED</div>
+        <div class="seat family" style="position:absolute; bottom:-16px; left:50px;">EW</div>
+      </div>
+
+      <!-- Table 3 - Round -->
+      <div class="table-round t3" style="width:140px; height:140px; left:300px; top:290px;">
+        <div class="seat friends">DT</div>
+        <div class="seat friends">ML</div>
+        <div class="seat friends">AJ</div>
+        <div class="seat friends">HR</div>
+        <div class="seat friends">MT</div>
+        <div class="seat friends">RM</div>
+        <div class="table-label">Table 3</div>
+        <div class="table-capacity cap-animate-3">6/8</div>
+      </div>
+
+      <!-- Drag cursor animation -->
+      <div class="drag-cursor"></div>
+      <div class="drag-ghost">EW</div>
+
+      <!-- Unassigned guests on right -->
+      <div class="unassigned-strip">
+        <div class="unassigned-guest">EW</div>
+        <div class="unassigned-guest">SM</div>
+        <div class="unassigned-guest">OC</div>
+        <div class="unassigned-guest">SG</div>
+        <div class="unassigned-guest">RM</div>
+      </div>
+
+      <!-- Guest sidebar -->
+      <div class="guest-sidebar">
+        <div class="sidebar-arrow">&#x25B6;</div>
+        <div class="sidebar-label">Guests</div>
+        <div class="sidebar-count">18</div>
+        <div class="sidebar-label" style="margin-top:12px; font-size:8px;">Unassigned</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════ SCENE 4: RSVP DASHBOARD ════════ -->
+  <div class="scene scene-4">
+    <div class="nav">
+      <div class="nav-logo" style="font-size:13px; color: var(--text-dim);">&larr; Events</div>
+      <div class="nav-tabs">
+        <span class="nav-tab">Canvas</span>
+        <span class="nav-tab">Guests</span>
+        <span class="nav-tab active">RSVPs</span>
+      </div>
+      <div class="nav-right">
+        <span style="font-size:12px; color: var(--text-dim);">Sarah & Tom's Wedding</span>
+        <div class="nav-avatar">N</div>
+      </div>
+    </div>
+    <div class="rsvp-content">
+      <div class="rsvp-sub-tabs">
+        <span class="rsvp-sub-tab active">Responses</span>
+        <span class="rsvp-sub-tab">Invitations</span>
+        <span class="rsvp-sub-tab">Settings</span>
+      </div>
+
+      <div class="rsvp-link-box">
+        <div>
+          <div class="rsvp-link-label">RSVP Link</div>
+          <div class="rsvp-link-sublabel">Share with guests to collect responses</div>
+        </div>
+        <div class="rsvp-link-url">seatify.app/rsvp/599ef85a-bc10...</div>
+        <div class="rsvp-copy-btn">Copy</div>
+      </div>
+
+      <div class="rsvp-stats">
+        <div class="rsvp-stat-card">
+          <div class="rate-ring">
+            <svg viewBox="0 0 60 60">
+              <circle class="ring-bg" />
+              <circle class="ring-fill" />
+            </svg>
+            <span class="rate-text stat-counter">89%</span>
+          </div>
+          <div class="stat-label">Response Rate</div>
+          <div class="stat-detail">16 of 18 responded</div>
+        </div>
+        <div class="rsvp-stat-card">
+          <div class="stat-value green stat-counter">16</div>
+          <div class="stat-label">Total Attending</div>
+          <div class="stat-detail">16 guests + 0 plus-ones</div>
+        </div>
+        <div class="rsvp-stat-card">
+          <div class="stat-value orange stat-counter">2</div>
+          <div class="stat-label">Pending</div>
+          <div class="stat-detail">Awaiting response</div>
+        </div>
+        <div class="rsvp-stat-card">
+          <div class="stat-value red stat-counter">0</div>
+          <div class="stat-label">Declined</div>
+          <div class="stat-detail">Not attending</div>
+        </div>
+      </div>
+
+      <div class="rsvp-responses-section">
+        <div class="rsvp-responses-title">Recent Responses</div>
+        <div class="response-row">
+          <div class="response-avatar" style="background: var(--purple);">AJ</div>
+          <div class="response-name">Ava Johnson</div>
+          <div class="response-status attending">Attending</div>
+          <div class="response-time">2 min ago</div>
+        </div>
+        <div class="response-row">
+          <div class="response-avatar" style="background: var(--cyan);">CW</div>
+          <div class="response-name">Charlotte White</div>
+          <div class="response-status attending">Attending</div>
+          <div class="response-time">15 min ago</div>
+        </div>
+        <div class="response-row">
+          <div class="response-avatar" style="background: var(--pink);">DT</div>
+          <div class="response-name">Daniel Thompson</div>
+          <div class="response-status attending">Attending</div>
+          <div class="response-time">1 hour ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step indicator dots -->
+  <div class="scene-badge">
+    <span class="step-label label-1">Create your event</span>
+    <span class="step-label label-2">Add your guests</span>
+    <span class="step-label label-3">Design your seating</span>
+    <span class="step-label label-4">Track RSVPs</span>
+    <span class="step-dot dot-1"></span>
+    <span class="step-dot dot-2"></span>
+    <span class="step-dot dot-3"></span>
+    <span class="step-dot dot-4"></span>
+  </div>
+
+</div>
+
+</body>
+</html>

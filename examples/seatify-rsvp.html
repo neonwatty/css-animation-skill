@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seatify – RSVP Tracking Animation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #2a2a2a;
+    --gold: #d4a574;
+    --text: #ffffff;
+    --text-dim: #999;
+    --text-muted: #666;
+    --green: #4caf50;
+    --green-dim: rgba(76, 175, 80, 0.15);
+    --orange: #e8943a;
+    --orange-dim: rgba(232, 148, 58, 0.15);
+    --red: #e05555;
+    --cyan: #56c8c8;
+    --pink: #c87896;
+    --purple: #8a7bc8;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ── Stage ── */
+  .stage {
+    width: 960px;
+    height: 685px;
+    position: relative;
+    overflow: hidden;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Nav Bar ── */
+  .nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .nav-back { font-size: 13px; color: var(--text-dim); letter-spacing: 0.5px; }
+  .nav-tabs { display: flex; gap: 24px; font-size: 11px; letter-spacing: 1.5px; font-weight: 500; text-transform: uppercase; }
+  .nav-tab { color: var(--text-dim); }
+  .nav-tab.active { color: var(--text); border-bottom: 1px solid var(--gold); padding-bottom: 2px; }
+  .nav-right { display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--text-dim); }
+  .nav-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--bg); }
+  .beta-badge { font-size: 9px; padding: 3px 8px; background: var(--green); color: var(--bg); border-radius: 4px; font-weight: 700; letter-spacing: 1px; }
+
+  /* ── Sub Tabs ── */
+  .sub-tabs {
+    display: flex; gap: 24px; padding: 10px 32px 0; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .sub-tab {
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase; font-weight: 500;
+    color: var(--text-dim); padding-bottom: 10px;
+  }
+  .sub-tab.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
+
+  /* ── Content ── */
+  .content {
+    flex: 1; overflow: hidden; padding: 16px 32px;
+  }
+
+  /* ── RSVP Link Card ── */
+  .rsvp-link-card {
+    display: flex; align-items: center; gap: 16px;
+    padding: 12px 20px; border: 1px solid var(--border); border-radius: 8px;
+    margin-bottom: 12px;
+  }
+  .rsvp-link-label { font-size: 12px; font-weight: 600; letter-spacing: 0.5px; }
+  .rsvp-link-sub { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+  .rsvp-link-url {
+    flex: 1; font-size: 11px; color: var(--text-dim); font-family: monospace;
+    background: var(--surface); padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rsvp-link-actions { display: flex; gap: 8px; }
+  .btn-copy {
+    font-size: 11px; padding: 6px 14px; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-weight: 500; letter-spacing: 0.5px;
+  }
+  .btn-qr {
+    width: 32px; height: 32px; border: 1px solid var(--border); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--text-dim);
+  }
+
+  /* ── Stats Row ── */
+  .stats-row {
+    display: flex; gap: 12px; margin-bottom: 12px;
+  }
+  .stat-card {
+    flex: 1; border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; text-align: center;
+    transition: border-color 0.5s, box-shadow 0.5s;
+  }
+  .stat-number {
+    font-family: var(--serif);
+    font-size: 32px;
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .stat-number.gold { color: var(--gold); }
+  .stat-number.green { color: var(--green); }
+  .stat-number.orange { color: var(--orange); }
+  .stat-number.red { color: var(--red); }
+  .stat-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 2px;
+  }
+  .stat-detail { font-size: 10px; color: var(--text-dim); }
+
+  /* Pulse glow on response rate when done */
+  .stage.done .stat-card:first-child {
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(212, 165, 116, 0.15);
+  }
+
+  /* ── Tabs below stats ── */
+  .content-tabs {
+    display: flex; gap: 20px; margin-bottom: 10px;
+    border-bottom: 1px solid var(--border); padding-bottom: 8px;
+  }
+  .content-tab { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+  .content-tab.active { color: var(--gold); }
+
+  /* ── Recent Responses Section ── */
+  .responses-section {
+    border: 1px solid var(--border); border-radius: 8px; overflow: hidden;
+  }
+  .responses-header {
+    padding: 10px 16px; font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .responses-body {
+    padding: 4px 0;
+    min-height: 80px;
+    position: relative;
+  }
+  .empty-msg {
+    text-align: center; padding: 24px 0; font-size: 13px; color: var(--text-dim);
+    transition: opacity 0.3s;
+  }
+  .stage.responding .empty-msg { display: none; }
+
+  /* ── Response Entry ── */
+  .response-entry {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 16px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(30px);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out, visibility 0s 0.5s;
+  }
+  .response-entry.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition: opacity 0.5s ease-out, transform 0.5s ease-out, visibility 0s 0s;
+  }
+  .response-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700; color: var(--bg); flex-shrink: 0;
+  }
+  .response-info { flex: 1; }
+  .response-name { font-size: 13px; font-weight: 500; }
+  .response-org { font-size: 11px; color: var(--text-dim); }
+  .response-status {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 3px;
+  }
+  .response-status.confirmed { background: var(--green-dim); color: var(--green); }
+  .response-time { font-size: 10px; color: var(--text-muted); white-space: nowrap; }
+
+  /* ── Refresh row ── */
+  .refresh-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .refresh-left { display: flex; align-items: center; gap: 10px; }
+  .refresh-text { font-size: 11px; color: var(--text-dim); }
+  .btn-refresh {
+    font-size: 11px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); display: flex; align-items: center; gap: 5px; font-weight: 500;
+  }
+  .btn-export {
+    font-size: 11px; padding: 5px 12px; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); display: flex; align-items: center; gap: 5px; font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- Nav -->
+  <div class="nav">
+    <span class="nav-back">&lsaquo; EVENTS</span>
+    <div class="nav-tabs">
+      <span class="nav-tab">Canvas</span>
+      <span class="nav-tab">Guests</span>
+      <span class="nav-tab active">RSVPs</span>
+    </div>
+    <div class="nav-right">
+      Sarah &amp; Tom's Weddin
+      <span class="beta-badge">BETA</span>
+      <div class="nav-avatar">N</div>
+    </div>
+  </div>
+
+  <!-- Sub Tabs -->
+  <div class="sub-tabs">
+    <span class="sub-tab active">Responses</span>
+    <span class="sub-tab">Invitations</span>
+    <span class="sub-tab">Settings</span>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- RSVP Link Card -->
+    <div class="rsvp-link-card">
+      <div>
+        <div class="rsvp-link-label">RSVP LINK</div>
+        <div class="rsvp-link-sub">Share with guests to collect responses</div>
+      </div>
+      <div class="rsvp-link-url">https://seatify.app/rsvp/599ef85a-bc10-4fc3...</div>
+      <div class="rsvp-link-actions">
+        <div class="btn-copy">Copy</div>
+        <div class="btn-qr">&#9638;</div>
+      </div>
+    </div>
+
+    <!-- Refresh Row -->
+    <div class="refresh-row">
+      <div class="refresh-left">
+        <span class="refresh-text">Updated just now</span>
+        <div class="btn-refresh">&#x21BB; Refresh</div>
+      </div>
+      <div class="btn-export">&#x2913; Export CSV</div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-number gold" id="stat-rate">0%</div>
+        <div class="stat-label">Response Rate</div>
+        <div class="stat-detail" id="stat-rate-detail">0 of 18 responded</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number green" id="stat-attending">0</div>
+        <div class="stat-label">Total Attending</div>
+        <div class="stat-detail" id="stat-attending-detail">0 guests + 0 plus-ones</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number orange" id="stat-pending">18</div>
+        <div class="stat-label">Pending</div>
+        <div class="stat-detail">Awaiting response</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number red" id="stat-declined">0</div>
+        <div class="stat-label">Declined</div>
+        <div class="stat-detail">Not attending</div>
+      </div>
+    </div>
+
+    <!-- Content Tabs -->
+    <div class="content-tabs">
+      <span class="content-tab active">Overview</span>
+      <span class="content-tab" id="pending-tab">Pending (18)</span>
+      <span class="content-tab">Seating Preferences</span>
+    </div>
+
+    <!-- Recent Responses -->
+    <div class="responses-section">
+      <div class="responses-header">Recent Responses</div>
+      <div class="responses-body" id="responses-body">
+        <div class="empty-msg" id="empty-msg">No responses yet.</div>
+
+        <div class="response-entry" id="r1">
+          <div class="response-avatar" style="background:var(--cyan);">JW</div>
+          <div class="response-info">
+            <div class="response-name">James Wilson</div>
+            <div class="response-org">City Hospital</div>
+          </div>
+          <div class="response-status confirmed">Confirmed</div>
+          <div class="response-time">Just now</div>
+        </div>
+
+        <div class="response-entry" id="r2">
+          <div class="response-avatar" style="background:var(--cyan);">CW</div>
+          <div class="response-info">
+            <div class="response-name">Charlotte White</div>
+            <div class="response-org">White Media Group</div>
+          </div>
+          <div class="response-status confirmed">Confirmed</div>
+          <div class="response-time">Just now</div>
+        </div>
+
+        <div class="response-entry" id="r3">
+          <div class="response-avatar" style="background:var(--gold);">BT</div>
+          <div class="response-info">
+            <div class="response-name">Benjamin Taylor</div>
+            <div class="response-org">Taylor Ventures</div>
+          </div>
+          <div class="response-status confirmed">Confirmed</div>
+          <div class="response-time">1m ago</div>
+        </div>
+
+        <div class="response-entry" id="r4">
+          <div class="response-avatar" style="background:var(--pink);">HR</div>
+          <div class="response-info">
+            <div class="response-name">Harper Reed</div>
+            <div class="response-org">Shopify</div>
+          </div>
+          <div class="response-status confirmed">Confirmed</div>
+          <div class="response-time">2m ago</div>
+        </div>
+
+        <div class="response-entry" id="r5">
+          <div class="response-avatar" style="background:var(--pink);">AJ</div>
+          <div class="response-info">
+            <div class="response-name">Ava Johnson</div>
+            <div class="response-org">Netflix</div>
+          </div>
+          <div class="response-status confirmed">Confirmed</div>
+          <div class="response-time">3m ago</div>
+        </div>
+
+        <div class="response-entry" id="r6">
+          <div class="response-avatar" style="background:var(--pink);">DT</div>
+          <div class="response-info">
+            <div class="response-name">Daniel Thompson</div>
+            <div class="response-org">Google</div>
+          </div>
+          <div class="response-status confirmed">Confirmed</div>
+          <div class="response-time">4m ago</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const stage = document.getElementById('stage');
+  const statRate = document.getElementById('stat-rate');
+  const statRateDetail = document.getElementById('stat-rate-detail');
+  const statAttending = document.getElementById('stat-attending');
+  const statAttendingDetail = document.getElementById('stat-attending-detail');
+  const statPending = document.getElementById('stat-pending');
+  const pendingTab = document.getElementById('pending-tab');
+  const emptyMsg = document.getElementById('empty-msg');
+
+  const responses = ['r1', 'r2', 'r3', 'r4', 'r5', 'r6'];
+
+  // Cumulative stats after each response arrives
+  const statsSteps = [
+    { rate: 6,  responded: 1,  attending: 1,  pending: 17 },
+    { rate: 11, responded: 2,  attending: 2,  pending: 16 },
+    { rate: 17, responded: 3,  attending: 3,  pending: 15 },
+    { rate: 22, responded: 4,  attending: 4,  pending: 14 },
+    { rate: 28, responded: 5,  attending: 5,  pending: 13 },
+    { rate: 33, responded: 6,  attending: 6,  pending: 12 },
+  ];
+
+  // Final state: jump to real values (89%, 16 attending, 2 pending)
+  const finalStats = { rate: 89, responded: 16, attending: 16, pending: 2 };
+
+  function resetAll() {
+    stage.classList.remove('responding', 'done');
+    statRate.textContent = '0%';
+    statRateDetail.textContent = '0 of 18 responded';
+    statAttending.textContent = '0';
+    statAttendingDetail.textContent = '0 guests + 0 plus-ones';
+    statPending.textContent = '18';
+    pendingTab.textContent = 'Pending (18)';
+    responses.forEach(id => {
+      document.getElementById(id).classList.remove('visible');
+    });
+  }
+
+  function updateStats(s) {
+    statRate.textContent = s.rate + '%';
+    statRateDetail.textContent = s.responded + ' of 18 responded';
+    statAttending.textContent = s.attending;
+    statAttendingDetail.textContent = s.attending + ' guests + 0 plus-ones';
+    statPending.textContent = s.pending;
+    pendingTab.textContent = 'Pending (' + s.pending + ')';
+  }
+
+  function runCycle() {
+    resetAll();
+
+    // 0.5s: Start responding
+    setTimeout(() => {
+      stage.classList.add('responding');
+    }, 500);
+
+    // Responses roll in one by one (350ms apart)
+    responses.forEach((id, i) => {
+      setTimeout(() => {
+        document.getElementById(id).classList.add('visible');
+        updateStats(statsSteps[i]);
+      }, 700 + i * 350);
+    });
+
+    // After last response + brief pause, jump to final real stats
+    setTimeout(() => {
+      updateStats(finalStats);
+      stage.classList.add('done');
+    }, 3000);
+
+    // Loop (shorter hold on final state)
+    setTimeout(runCycle, 5500);
+  }
+
+  setTimeout(runCycle, 500);
+</script>
+
+</body>
+</html>

@@ -38,8 +38,9 @@ Before generating anything, deeply understand the target app's visual system by 
 ### Step 2: Navigate and explore
 1. Navigate to the target app URL
 2. If auth is required, ask the user to log in manually, then resume
-3. Navigate to the specific feature/page to animate
-4. Take exploratory screenshots to understand the layout
+3. **If targeting mobile or both:** Resize the browser to mobile viewport (390×844px) using `resize_window` before navigating to the feature. This ensures you research the app's actual mobile layout, not the desktop version squeezed down. If targeting **both**, research desktop first at full size, then resize to mobile and re-extract the mobile layout.
+4. Navigate to the specific feature/page to animate
+5. Take exploratory screenshots to understand the layout
 
 ### Step 3: Extract design language
 Use `read_page`, `find`, and `javascript_tool` to extract:
@@ -97,21 +98,37 @@ Ask the user focused questions to define what to animate. Use AskUserQuestion fo
 - Carousel: Cycles through multiple app views with cross-fade transitions.
 ```
 
-### Question 2: Feature identification
+### Question 2: Target size
+```
+"What size should the animation target?"
+- Desktop only (960×620px) — for landing pages, marketing, desktop walkthroughs
+- Mobile only (360×640px) — for in-app tour tooltips, mobile onboarding
+- Both — generates two files from the same brief, one per viewport
+```
+
+When **Mobile** or **Both** is selected:
+- The mobile variant uses a **360×640px** stage (portrait, matching common phone viewports)
+- Simplify the layout: fewer elements (8–12 max), larger relative sizing, no sidebars
+- Drop elements that don't translate to small screens (wide toolbars, multi-column layouts)
+- Prefer vertical stacking over horizontal layouts
+- Increase font sizes relative to stage (minimum 11px body, 14px headings)
+- File naming: `<app>-<feature>.html` (desktop), `<app>-<feature>-mobile.html` (mobile)
+
+### Question 3: Feature identification
 ```
 "What specific feature or flow should the animation show?"
 - [Options based on research phase findings]
 - Other (user describes)
 ```
 
-### Question 3: The payoff moment
+### Question 4: The payoff moment
 ```
 "What's the key moment — the visual 'wow' of this animation?"
 - [Options relevant to the chosen feature]
 - Other
 ```
 
-### Question 4: Emphasis
+### Question 5: Emphasis
 ```
 "Is there anything specific to emphasize or avoid showing?"
 - Show everything as-is
@@ -119,7 +136,7 @@ Ask the user focused questions to define what to animate. Use AskUserQuestion fo
 - Hide certain elements (user specifies)
 ```
 
-### Question 5: Output location
+### Question 6: Output location
 ```
 "Where should I save the animation files?"
 - Current directory: [show cwd path]
@@ -146,7 +163,9 @@ Write a structured markdown document capturing everything needed to generate or 
 app: <App Name>
 feature: <Feature Name>
 style: feature-demo | carousel
+target: desktop | mobile | both
 output_file: <app>-<feature>.html
+output_file_mobile: <app>-<feature>-mobile.html  # only when target is mobile or both
 ---
 
 # Design Language
@@ -161,13 +180,21 @@ output_file: <app>-<feature>.html
 - Border radius: <N>px
 - Additional colors: <name>: <hex> (for groups, statuses, categories, etc.)
 
-# Layout
-- Stage: <W>x<H>px
+# Layout (Desktop)
+- Stage: 960x620px
 - [Container hierarchy description]
 - [Element positions with exact pixel coordinates]
 - [Circular elements: center point (x,y), radius R]
 - [Rectangular containers: origin (x,y), width, height]
 - [Item sizing: WxH px]
+
+# Layout (Mobile)  <!-- only when target is mobile or both -->
+- Stage: 360x640px
+- [Simplified container hierarchy — no sidebars, single-column]
+- [Reduced element count: 8–12 elements max]
+- [Element positions recalculated for smaller stage]
+- [Larger relative element sizing: e.g., 36x36px avatars instead of 30x30px]
+- [Elements or sections omitted from desktop version and why]
 
 # Animation Plan
 
@@ -314,7 +341,10 @@ setTimeout(runCycle, 300);
 
 **7. Stagger transitions** with `transition-delay` on individual elements (0.04–0.08s apart) for sequential movement that feels natural.
 
-**8. Default stage: 960x620px**, `border-radius: 12px`, dark theme matching the app's design language. Adjust based on the app's actual proportions.
+**8. Stage dimensions by target.**
+- **Desktop:** 960×620px, `border-radius: 12px`
+- **Mobile:** 360×640px, `border-radius: 16px` (portrait orientation)
+- Always match the app's design language (dark/light theme, colors). Adjust proportions based on the app's actual layout at that viewport.
 
 **9. Hidden elements must use `visibility: hidden` alongside `opacity: 0`.** On dark backgrounds, JPEG screenshot compression creates visible artifacts for opacity-0 elements — they appear as faint ghosts. Always pair:
 ```css
@@ -359,6 +389,25 @@ If content overflows, compact spacing (reduce padding, margins, font sizes) or i
 - Include: completion badge that animates in after the transformation
 - Include: text content updates (counters, labels) via JS in the setTimeout chain
 
+#### Mobile-Specific Rules
+
+When generating mobile animations (360×640px stage):
+
+- **Simplify aggressively.** Show the essence of the feature, not every UI element. A desktop animation might show a full toolbar + sidebar + canvas; the mobile version shows just the core interaction.
+- **8–12 elements max.** Small stages get cluttered fast. Cut decorative elements first, then secondary UI.
+- **No animated cursor.** Mobile is touch — replace cursor animations with a tap indicator (a brief circle pulse at the tap point).
+- **Larger relative sizing.** Elements should be proportionally larger relative to the stage. If desktop uses 30×30px avatars on a 960px stage (3.1%), mobile should use 36×36px on 360px (10%).
+- **Single-column layouts.** No sidebars. Stack content vertically.
+- **Bottom-anchored actions.** Buttons and CTAs at the bottom of the stage, matching mobile app conventions.
+- **Skip nav bars if tight on space.** The animation doesn't need to recreate the full app chrome — focus on the feature area.
+
+When generating **both** variants from a single brief:
+- Generate the desktop version first (`<app>-<feature>.html`)
+- Then generate the mobile version (`<app>-<feature>-mobile.html`) as a separate file
+- The mobile version is a purposeful redesign for the smaller stage, not a scaled-down copy
+- Both files share the same design language (colors, fonts) but have independent layouts
+- Review each variant independently in Phase 4
+
 ---
 
 ## Phase 4: Review Loop
@@ -376,9 +425,12 @@ This is the core quality mechanism. After generating the animation HTML, enter a
    python3 -m http.server 8765 --directory <output-directory> &
    ```
 3. Use the Chrome tab from Phase 1 (or create a new one)
-4. Navigate to: `http://localhost:8765/<filename>.html?v=<timestamp>`
+4. **If reviewing a mobile animation:** Resize the browser to mobile viewport (390×844px) using `resize_window` before navigating. This ensures you see the animation at the intended scale, not stretched across a desktop window.
+5. Navigate to: `http://localhost:8765/<filename>.html?v=<timestamp>`
 
 **ALWAYS append `?v=<Date.now()>` to bust the cache after every edit.**
+
+**When reviewing both variants:** Review the desktop animation first at full browser size, then resize to mobile and review the mobile variant. Keep reviews separate — don't mix feedback between variants.
 
 ### Step 2: Freeze and inspect each key state
 

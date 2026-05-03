@@ -1,5 +1,7 @@
 # CSS Animation Skill for Claude Code
 
+[![Discord](https://img.shields.io/badge/Discord-Join%20Server-7289da?style=flat&logo=discord&logoColor=white)](https://discord.gg/7xsxU4ZG6A)
+
 A Claude Code skill that generates self-contained HTML/CSS animations of app features — for walkthroughs, demos, and onboarding.
 
 ![Seating Optimization Demo](examples/seatify-optimize-demo.gif)
